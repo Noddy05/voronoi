@@ -25,7 +25,11 @@ void setup() {
   maxX = width * (1 + 1 / offScreen);
   minY = -height / offScreen;
   maxY = height * (1 + 1 / offScreen);
+  
+  setupPoints();
+}
 
+void setupPoints(){
   for (int i = 0; i < nPoints; i++) {
     colors[i] = color(random(50, 255), random(50, 255), random(50, 255));
     points[i] = new PVector(random(minX, maxX), random(minY, maxY));
@@ -38,18 +42,47 @@ void setup() {
 void draw() {
   background(30);
 
+  drawPixels();
+  
+  noStroke();
+  fill(240);
+  for (int i = 0; i < nPoints; i++) {
+    if (mode == Modes.Bounce)
+      modeBounce(i);
+    else if (mode == Modes.Modulus)
+      modeModulus(i);
+    
+    //Uncomment if you want to draw voronoi origin
+    //circle(points[i].x, points[i].y, 5);
+  }
+}
+
+void modeModulus(int i){
+  points[i].x += 50;
+  points[i].y += 13;
+  if (points[i].x > maxX)
+    points[i].x = minX;
+  if (points[i].x < minX)
+    points[i].x = maxX;
+
+  if (points[i].y > maxY)
+    points[i].y = minY;
+  if (points[i].y < minY)
+    points[i].y = maxY;
+}
+
+void modeBounce(int i){
+  points[i].add(directions[i]);
+  if (points[i].x > maxX || points[i].x < minX)
+    directions[i].x *= -1;
+  if (points[i].y > maxY || points[i].y < minY)
+    directions[i].y *= -1;
+}
+
+void drawPixels(){
   for (int y = 0; y < height; y++) {
     for (int x = 0; x < width; x++) {
-      int minI = 0;
-      float minDistance = squareDist(x, y, points[0].x, points[0].y);
-      for (int i = 0; i < nPoints; i++) {
-        float distance = squareDist(x, y, points[i].x, points[i].y);
-        if (distance < minDistance)
-        {
-          minDistance = distance;
-          minI = i;
-        }
-      }
+      int minI = calculateClosestIndex();
 
       //color pixelColor = waterColor(minI, x, y);
       color pixelColor = uniqueColor(minI);
@@ -59,34 +92,21 @@ void draw() {
       set(x, y, pixelColor);
     }
   }
-  noStroke();
-  fill(240);
-  for (int i = 0; i < nPoints; i++) {
-    if (mode == Modes.Bounce) {
-      points[i].add(directions[i]);
-      if (points[i].x > maxX || points[i].x < minX)
-        directions[i].x *= -1;
-      if (points[i].y > maxY || points[i].y < minY)
-        directions[i].y *= -1;
-    } else if (mode == Modes.Modulus) {
-      points[i].x += 50;
-      points[i].y += 13;
-      if (points[i].x > maxX)
-        points[i].x = minX;
-      if (points[i].x < minX)
-        points[i].x = maxX;
-
-      if (points[i].y > maxY)
-        points[i].y = minY;
-      if (points[i].y < minY)
-        points[i].y = maxY;
-    }
-    
-    //Uncomment if you want to draw voronoi origin
-    //circle(points[i].x, points[i].y, 5);
-  }
 }
 
+int calculateClosestIndex(){
+  int minI = 0;
+  float minDistance = squareDist(x, y, points[0].x, points[0].y);
+  for (int i = 1; i < nPoints; i++) {
+    float distance = squareDist(x, y, points[i].x, points[i].y);
+    if (distance < minDistance)
+    {
+      minDistance = distance;
+      minI = i;
+    }
+  }
+  return minI;
+}
 
 PVector rippleColor = new PVector(150, 190, 255);
 float strength = 2;
